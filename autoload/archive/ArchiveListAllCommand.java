@@ -1,26 +1,45 @@
 /**
- * Copyright (C) 2005 - 2009  Eric Van Dewoestine
+ * Copyright (c) 2005 - 2010, Eric Van Dewoestine
+ * All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Redistribution and use of this software in source and binary forms, with
+ * or without modification, are permitted provided that the following
+ * conditions are met:
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * * Redistributions of source code must retain the above
+ *   copyright notice, this list of conditions and the
+ *   following disclaimer.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * * Redistributions in binary form must reproduce the above
+ *   copyright notice, this list of conditions and the
+ *   following disclaimer in the documentation and/or other
+ *   materials provided with the distribution.
+ *
+ * * Neither the name of Eric Van Dewoestine nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission of
+ *   Eric Van Dewoestine.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.eclim.plugin.core.command.archive;
+package archive;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
+import java.io.InputStream;
 
 import java.text.Collator;
 
@@ -29,7 +48,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
 
-import org.apache.tools.ant.taskdefs.Untar.UntarCompressionMethod;
+import java.util.zip.GZIPInputStream;
+
+import org.apache.tools.bzip2.CBZip2InputStream;
 
 import org.apache.tools.tar.TarEntry;
 import org.apache.tools.tar.TarInputStream;
@@ -37,42 +58,33 @@ import org.apache.tools.tar.TarInputStream;
 import org.apache.tools.zip.ZipEntry;
 import org.apache.tools.zip.ZipFile;
 
-import org.eclim.annotation.Command;
-
-import org.eclim.command.CommandLine;
-import org.eclim.command.Options;
-
-import org.eclim.util.IOUtils;
-import org.eclim.util.StringUtils;
-
 /**
  * Command to list all contents of an archive.
  *
  * @author Eric Van Dewoestine
  */
-@Command(
-  name = "archive_list_all",
-  options = "REQUIRED f file ARG"
-)
 public class ArchiveListAllCommand
-  extends ArchiveListCommand
 {
   private static final Comparator<String[]> COMPARATOR = new EntryComparator();
 
-  /**
-   * {@inheritDoc}
-   */
-  public String execute(CommandLine commandLine)
+  public static final void main(String[] args)
     throws Exception
   {
-    String file = commandLine.getValue(Options.FILE_OPTION);
+    new ArchiveListAllCommand().execute(args);
+  }
+
+  @SuppressWarnings("unchecked")
+  public void execute(String[] args)
+    throws Exception
+  {
+    String file = args[0];
     Object[] results = null;
     if (file.endsWith(".jar") ||
         file.endsWith(".ear") ||
         file.endsWith(".war") ||
         file.endsWith(".egg") ||
         file.endsWith(".zip")){
-      results = expand(file);
+      results = expandZip(file);
     } else if (file.endsWith(".tar") ||
         file.endsWith(".tar.gz") ||
         file.endsWith(".tar.bz2") ||
@@ -81,7 +93,7 @@ public class ArchiveListAllCommand
       results = expandTar(file);
     }
 
-    File tmp = File.createTempFile("eclim", "archive");
+    File tmp = File.createTempFile("vim-archive-", "-contents");
     BufferedWriter out = null;
     try{
       out = new BufferedWriter(new FileWriter(tmp));
@@ -92,19 +104,23 @@ public class ArchiveListAllCommand
 
       for (String[] entry : entries) {
         out.write(
-            StringUtils.rightPad(entry[0], maxName, ' ') +
-            StringUtils.rightPad(entry[1], maxSize, ' ') +
+            ArchiveUtils.rightPad(entry[0], maxName) +
+            ArchiveUtils.rightPad(entry[1], maxSize) +
             entry[2] + '\n');
       }
     }finally{
-      IOUtils.closeQuietly(out);
-      tmp.deleteOnExit();
+      try{
+        out.close();
+      }catch(Exception ignore){
+      }
+      //tmp.deleteOnExit();
     }
 
-    return tmp.getAbsolutePath();
+    System.out.println(tmp.getAbsolutePath());
   }
 
-  private Object[] expand(String file)
+  @SuppressWarnings("unchecked")
+  private Object[] expandZip(String file)
     throws Exception
   {
     ArrayList<String[]> results = new ArrayList<String[]>();
@@ -121,7 +137,7 @@ public class ArchiveListAllCommand
           String name = ze.getName();
           String size = String.valueOf(ze.getSize());
           results.add(new String[]{
-            name, size, formatTime(ze.getTime())
+            name, size, ArchiveUtils.formatTime(ze.getTime())
           });
           maxName = name.length() > maxName ? name.length() : maxName;
           maxSize = size.length() > maxSize ? size.length() : maxSize;
@@ -141,32 +157,42 @@ public class ArchiveListAllCommand
     int maxSize = 0;
 
     TarInputStream tis = null;
-    FileInputStream fis = null;
+    InputStream in = null;
     try{
-      UntarCompressionMethod compression = new UntarCompressionMethod();
+      in = new FileInputStream(file);
       if(file.endsWith(".tar.gz") || file.endsWith(".tgz")){
-        compression.setValue("gzip");
+        in = new GZIPInputStream(new BufferedInputStream(in));
       }else if(file.endsWith(".tar.bz2") || file.endsWith(".tbz2")){
-        compression.setValue("bzip2");
+        final char[] magic = new char[] {'B', 'Z'};
+        for (int i = 0; i < magic.length; i++) {
+            if (in.read() != magic[i]) {
+                throw new Exception("Invalid bz2 file.");
+            }
+        }
+        in = new CBZip2InputStream(new BufferedInputStream(in));
       }
-      fis = new FileInputStream(file);
-      tis = new TarInputStream(
-          compression.decompress("", new BufferedInputStream(fis)));
+      tis = new TarInputStream(in);
       TarEntry te = null;
       while ((te = tis.getNextEntry()) != null) {
         if(!te.isDirectory()){
           String name = te.getName();
           String size = String.valueOf(te.getSize());
           results.add(new String[]{
-            name, size, formatTime(te.getModTime())
+            name, size, ArchiveUtils.formatTime(te.getModTime())
           });
           maxName = name.length() > maxName ? name.length() : maxName;
           maxSize = size.length() > maxSize ? size.length() : maxSize;
         }
       }
     }finally{
-        IOUtils.closeQuietly(tis);
-        IOUtils.closeQuietly(fis);
+      try{
+        tis.close();
+      }catch(Exception ignore){
+      }
+      try{
+        in.close();
+      }catch(Exception ignore){
+      }
     }
     return new Object[]{results, maxName, maxSize};
   }

@@ -22,14 +22,18 @@
 "
 " }}}
 
-" SetUp() {{{
-function! SetUp()
-  exec 'cd ' . g:TestEclimWorkspace
-endfunction " }}}
+let s:tempdir = expand('$TMP')
+if s:tempdir == '$TMP'
+  let s:tempdir = expand('$TEMP')
+endif
+if s:tempdir == '$TEMP' && has('unix')
+  let s:tempdir = '/tmp'
+endif
+let s:tempdir = substitute(s:tempdir, '\', '/', 'g')
 
 " TestArchiveList() {{{
 function! TestArchiveList()
-  edit eclim_unit_test/test_archive.tar.gz
+  edit test/test_archive.tar.gz
   call vunit#AssertEquals(line('$'), 4, 'Wrong number of lines in tree: test_archive.tar.gz')
   call vunit#AssertEquals(getline(1), 'test_archive.tar.gz/')
   call vunit#AssertEquals(getline(2), '  + test_archive/')
@@ -41,7 +45,7 @@ function! TestArchiveList()
   exec "normal \<cr>"
 
   let name = substitute(expand('%:p'), '\', '/', 'g')
-  call vunit#AssertEquals(name, g:EclimTempDir . '/test_archive/dir1/file1.txt')
+  call vunit#AssertEquals(name, s:tempdir . '/vim-archive/test_archive/dir1/file1.txt')
   call vunit#AssertEquals(line('$'), 2)
   call vunit#AssertEquals(getline(1), 'file')
   call vunit#AssertEquals(getline(2), 'one')
@@ -56,7 +60,7 @@ endfunction " }}}
 
 " TestArchiveTree() {{{
 function! TestArchiveTree()
-  edit eclim_unit_test/test_archive.tar.gz
+  edit test/test_archive.tar.gz
   call vunit#AssertEquals(line('$'), 4, 'Wrong number of lines: test_archive.tar.gz')
   call vunit#AssertEquals(getline(1), 'test_archive.tar.gz/')
   call vunit#AssertEquals(getline(2), '  + test_archive/')
@@ -100,7 +104,7 @@ function! TestArchiveTree()
   exec "normal \<cr>"
 
   let name = substitute(expand('%:p'), '\', '/', 'g')
-  call vunit#AssertEquals(name, g:EclimTempDir . '/test_archive/dir1/file1.txt')
+  call vunit#AssertEquals(name, s:tempdir . '/vim-archive/test_archive/dir1/file1.txt')
   call vunit#AssertEquals(line('$'), 2)
   call vunit#AssertEquals(getline(1), 'file')
   call vunit#AssertEquals(getline(2), 'one')
