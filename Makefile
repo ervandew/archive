@@ -16,6 +16,10 @@ all:
 		fi
 	@rm $(TEMP)
 
+dist:
+	@rm archive.zip 2> /dev/null || true
+	@zip archive.zip `git ls-files autoload doc plugin`
+
 clean:
 	@rm autoload/archive/*.class 2> /dev/null || true
 	@rm -R build 2> /dev/null || true

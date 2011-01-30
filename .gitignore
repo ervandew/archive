@@ -2,3 +2,4 @@
 *.class
 tags
 /build
+/archive.zip
