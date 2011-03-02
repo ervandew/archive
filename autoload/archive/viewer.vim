@@ -215,9 +215,11 @@ function! archive#viewer#ExecuteAction(file, command)
     exec edit_window ? edit_window . 'winc w' : 'new'
   endif
 
-  " windows may throw a Permission Denied error attempting to split using the
-  " archive file name, but opening the window and then editing the file works
-  if (has('win32') || has('win64')) && command =~ 'split'
+  " Windows may throw a Permission Denied error attempting to split using the
+  " archive file name, but opening the window and then editing the file works.
+  " Also, vim on windows manages to screw up the path opening a new tab if the
+  " path has any spaces.
+  if (has('win32') || has('win64')) && command != 'edit'
     exec substitute(command, 'split', 'new', 'g')
     let command = 'silent edit'
   endif
