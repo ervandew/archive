@@ -246,7 +246,7 @@ function! archive#viewer#ExpandDir()
     let path = s:Cygpath(path, 'windows')
   endif
   let dir = b:file_info[getline('.')].url
-  if dir !~ path . '$' && s:IsArchive(dir)
+  if dir !~ '\M' . path . '$' && s:IsArchive(dir)
     let dir = s:FileUrl(dir) . '!/'
   endif
   let command = s:command_list
