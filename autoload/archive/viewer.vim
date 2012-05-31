@@ -1,7 +1,7 @@
 " Author:  Eric Van Dewoestine
 "
 " License: {{{
-"   Copyright (c) 2005 - 2011, Eric Van Dewoestine
+"   Copyright (c) 2005 - 2012, Eric Van Dewoestine
 "   All rights reserved.
 "
 "   Redistribution and use of this software in source and binary forms, with
@@ -274,7 +274,7 @@ function! archive#viewer#ExpandDir()
   for key in sort(keys(temp_info))
     let index = 0
     for line in content
-      if line =~ '^\s*+\?\s*' . escape(key, '.') . '/\?$'
+      if line =~ '^\s*+\?\s*\M' . key . '\m/\?$'
         let b:file_info[line] = temp_info[key]
         call remove(content, index)
         continue
