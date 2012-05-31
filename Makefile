@@ -1,7 +1,19 @@
 SHELL=/bin/bash
 TEMP := $(shell mktemp)
 
-all:
+.PHONY: test
+
+all: test dist
+
+dist:
+	@rm archive.zip 2> /dev/null || true
+	@zip archive.zip `git ls-files autoload doc plugin`
+
+clean:
+	@rm autoload/archive/*.class 2> /dev/null || true
+	@rm -R build 2> /dev/null || true
+
+test:
 	@vim -c "redir! > $(TEMP) | echo findfile('autoload/vunit.vim', escape(&rtp, ' ')) | quit"
 	@if [ -n "$$(cat $(TEMP))" ] ; then \
 			vunit=$$(dirname $$(dirname $$(cat $(TEMP)))) ; \
@@ -15,11 +27,3 @@ all:
 			echo "Unable to locate vunit in vim's runtimepath" ; \
 		fi
 	@rm $(TEMP)
-
-dist:
-	@rm archive.zip 2> /dev/null || true
-	@zip archive.zip `git ls-files autoload doc plugin`
-
-clean:
-	@rm autoload/archive/*.class 2> /dev/null || true
-	@rm -R build 2> /dev/null || true
