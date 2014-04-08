@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2005 - 2010, Eric Van Dewoestine
+ * Copyright (c) 2005 - 2014, Eric Van Dewoestine
  * All rights reserved.
  *
  * Redistribution and use of this software in source and binary forms, with
@@ -62,7 +62,7 @@ public class ArchiveListCommand
   public void execute(String[] args)
     throws Exception
   {
-    String file = args[0];
+    String file = args[0].replace("%", "%25");
     FileSystemManager manager = VFS.getManager();
     FileObject archive = manager.resolveFile(file);
     FileObject[] children = getFiles(archive);
