@@ -1,7 +1,7 @@
 " Author:  Eric Van Dewoestine
 "
 " License: {{{
-"   Copyright (c) 2005 - 2010, Eric Van Dewoestine
+"   Copyright (c) 2005 - 2018, Eric Van Dewoestine
 "   All rights reserved.
 "
 "   Redistribution and use of this software in source and binary forms, with
@@ -68,6 +68,7 @@ if g:ArchiveViewerEnabled
     autocmd!
     autocmd BufReadCmd *.egg     call archive#viewer#List()
     autocmd BufReadCmd *.jar     call archive#viewer#List()
+    autocmd BufReadCmd *.jmod    call archive#viewer#List()
     autocmd BufReadCmd *.war     call archive#viewer#List()
     autocmd BufReadCmd *.ear     call archive#viewer#List()
     autocmd BufReadCmd *.zip     call archive#viewer#List()

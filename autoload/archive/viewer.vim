@@ -1,7 +1,7 @@
 " Author:  Eric Van Dewoestine
 "
 " License: {{{
-"   Copyright (c) 2005 - 2014, Eric Van Dewoestine
+"   Copyright (c) 2005 - 2018, Eric Van Dewoestine
 "   All rights reserved.
 "
 "   Redistribution and use of this software in source and binary forms, with
@@ -53,7 +53,7 @@ let s:command_list_all = 'archive.ArchiveListAllCommand "<file>"'
 let s:command_read = 'archive.ArchiveReadCommand "<file>"'
 
 let s:urls = {
-    \ 'jar:': ['.jar', '.ear', '.war'],
+    \ 'jar:': ['.jar', '.jmod', '.ear', '.war'],
     \ 'tar:': ['.tar'],
     \ 'tgz:': ['.tgz', '.tar.gz'],
     \ 'tbz2:': ['.tbz2', '.tar.bz2'],
